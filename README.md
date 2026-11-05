@@ -60,7 +60,6 @@ Forcing HD usually fails once with **error 2103** — the licence for the HD key
 - **1080p is the ceiling on desktop.** Paramount caps its web player there; 4K needs a supported TV device.
 - Live channels and some catalog titles top out lower. The popup shows what you actually got.
 - Recovery depends on the site's player SDK. If Paramount changes it, recovery declines quietly and you are back to default quality — playback is never broken.
-- For more sharpness at 1080p, NVIDIA's driver-level **RTX Video Super Resolution** works in Firefox 126+ and stacks with this extension.
 
 ## Permissions
 
