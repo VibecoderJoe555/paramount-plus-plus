@@ -1,48 +1,77 @@
-# Paramount++
+<p align="center">
+  <img src="docs/popup.svg" width="300" alt="Paramount++ popup: on, 1080p selected, 1920×1080 locked">
+</p>
 
-A small Firefox extension that forces Paramount+ to play at your chosen quality
-instead of the soft 540p ladder its web player defaults to.
+<h1 align="center">Paramount++</h1>
 
-Local build. No telemetry, no analytics, no remote code, no network requests of
-its own.
+<p align="center">
+  Makes Paramount+ play at 720p or 1080p instead of the soft 540p its web player settles on.
+</p>
 
-## Why the player picks 540p
+<p align="center">
+  <a href="https://github.com/VibecoderJoe555/paramount-plus-plus/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/VibecoderJoe555/paramount-plus-plus?color=2f7cf6&label=release"></a>
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
+  <img alt="firefox" src="https://img.shields.io/badge/firefox-142%2B-orange">
+  <img alt="data collected" src="https://img.shields.io/badge/data%20collected-none-brightgreen">
+</p>
 
-Paramount ships two video ladders in one DASH manifest:
-
-| Set | Codec | Heights |
-| --- | --- | --- |
-| HD | `avc3` | 1080, 720 |
-| SD | `avc1` | 540, 432, 360, 234 |
-
-The player only accepts `avc1`, so it drops the HD set and plays the SD ladder.
-Each set also declares its own `cenc:default_KID`, i.e. its own content key.
-
-This extension keeps only the representations at your chosen height and removes
-the sets that end up empty, so the player has nothing but the target to play.
-
-Forcing HD usually fails once with **error 2103** because the licence for the HD
-key is not granted on the ad-inserted stream. `failover.js` catches exactly that
-failure and reloads the title through the player's own SDK using the alternate
-CMS source, where the key *is* granted, then restores your position.
-
-## Quality
-
-Two modes in the popup, plus an on/off switch:
-
-- **720p** — highest rung at or below 720p
-- **1080p** — highest rung at or below 1080p (default)
-
-If a title has no rung at the requested height, the highest available one is used
-rather than leaving you with nothing.
+---
 
 ## Install
 
-**[Download Paramount++](https://github.com/VibecoderJoe555/paramount-plus-plus/releases/latest/download/paramount-plus-plus.xpi)** and drag the file into Firefox, then confirm the install prompt.
+**[Download Paramount++](https://github.com/VibecoderJoe555/paramount-plus-plus/releases/latest/download/paramount-plus-plus.xpi)** and drag the file into Firefox, then confirm the prompt.
 
-It is signed by Mozilla, so it stays installed across restarts.
+The build is signed by Mozilla, so it survives restarts and updates like a normal add-on.
 
-### From source
+Requires Firefox 142 or newer on Windows, macOS, or Linux.
+
+## Features
+
+- **720p or 1080p** — pick your ceiling; the player gets nothing lower to fall back to
+- **Live switching** — changes apply without reloading the page, and keep your position
+- **Toolbar badge** — `HD` or `SD`, green when at your target, amber when it slips
+- **Automatic recovery** — when Paramount refuses the HD key, the title is reloaded from an alternate source and resumed where you left off
+- **Keeps your audio** — volume and mute survive every switch
+- **Self-healing** — if a switch leaves the player spinning, the page reloads itself once
+
+## Why the player settles on 540p
+
+Paramount ships two video ladders inside one DASH manifest:
+
+| Set | Codec | Heights |
+| :-- | :---- | :------ |
+| HD | `avc3` | 1080, 720 |
+| SD | `avc1` | 540, 432, 360, 234 |
+
+The player only accepts `avc1`, so it discards the HD set and plays the SD ladder. Each set also declares its own content key (`cenc:default_KID`), so the two ladders are not interchangeable at the licence level.
+
+Paramount++ rewrites the manifest so only the representations at your chosen height remain, and drops the sets that end up empty. The media itself is never touched.
+
+Forcing HD usually fails once with **error 2103** — the licence for the HD key is not granted on the ad-inserted stream. The extension recognises that specific failure (it checks the missing key id against the one it forced), asks the site's own player SDK to reload the title from the alternate source, and restores your position.
+
+## What you will notice
+
+- A **brief 2103 flash and a short reload** when playback starts. That is the recovery working.
+- If the alternate source also refuses the key, the page reloads once with the extension off, and you get normal playback. Untick **On** for that title.
+- The popup reports the real decoded resolution, so you can confirm 1080p rather than trusting how it looks.
+
+## Limits
+
+- **1080p is the ceiling on desktop.** Paramount caps its web player there; 4K needs a supported TV device.
+- Live channels and some catalog titles top out lower. The popup shows what you actually got.
+- Recovery depends on the site's player SDK. If Paramount changes it, recovery declines quietly and you are back to default quality — playback is never broken.
+- For more sharpness at 1080p, NVIDIA's driver-level **RTX Video Super Resolution** works in Firefox 126+ and stacks with this extension.
+
+## Permissions
+
+| Permission | Why |
+| :--------- | :-- |
+| `storage` | Remembers the on/off switch and quality mode |
+| `*://*.paramountplus.com/*` | The only site it can read or modify |
+
+No `tabs`, `cookies`, `webRequest`, `scripting`, or `<all_urls>`. No network requests, no telemetry, no remote code.
+
+## Install from source
 
 For development, or to load an unsigned build:
 
@@ -52,61 +81,23 @@ For development, or to load an unsigned build:
 
 Temporary builds disappear when Firefox closes.
 
-## What you will notice
-
-- A **2103 flash and a short reload** when playback starts. That is the failover
-  working: HD is requested, the key is refused, the source is swapped, playback
-  resumes where you left off.
-- If the alternate source also refuses the key, the page reloads once with the
-  extension off and you get normal playback. Untick **Force highest quality** for
-  that title.
-- The popup shows the real decoded resolution, so you can confirm 1080p rather
-  than trusting how it looks.
-- The toolbar badge shows the live tier: `HD` green at 1080p, `SD` green at your
-  selected height, `SD` amber if it falls below target, `OFF` when disabled.
-- Volume and mute survive every quality change and recovery.
-- If a switch leaves the player spinning on "Optimizing your video playback
-  experience", the page reloads itself once after a few seconds instead of
-  hanging there.
-
-## Limits
-
-- **1080p is the ceiling on desktop.** Paramount caps the web player there;
-  4K needs a supported TV device.
-- Live channels and some catalog titles top out lower. The popup will show what
-  you actually got.
-- The failover depends on the site's Smart Tag SDK. If it changes, recovery
-  declines quietly and you are back to default quality — it will not break
-  playback.
-
-## How this was built
-
-Fully vibe-coded: designed and written end to end with an AI coding agent, guided
-by console logs and diagnostics captured from a real Paramount+ session. There is
-no build step and no minification — the files shipped are the source, readable as-is.
-
-## Files
+## Project structure
 
 | File | Role |
-| --- | --- |
-| `manifest.json` | MV3 manifest, `storage` + `paramountplus.com` only |
-| `page.js` | Manifest rewriting in the page's main world |
-| `failover.js` | Missing-key detection and source failover |
-| `content.js` | Injects the engine, relays config/status |
+| :--- | :--- |
+| `manifest.json` | MV3 manifest |
+| `page.js` | Manifest rewriting, in the page's main world |
+| `failover.js` | Missing-key detection, source failover, quality switching |
+| `content.js` | Injects the engine, relays status, drives the badge, watchdog |
 | `background.js` | Toolbar badge |
 | `popup.html` / `popup.js` | Toggle, quality selector, live status |
 
-## Permissions
+## How this was built
 
-- `storage` — remembers the toggle and quality mode.
-- `*://*.paramountplus.com/*` — the only site it can touch.
-
-No `tabs`, `cookies`, `webRequest`, `scripting`, or `<all_urls>`.
+Vibe-coded end to end with an AI coding agent, guided by console logs and diagnostics captured from a real Paramount+ session. There is no build step and no minification — the files shipped are the source, readable as-is.
 
 ## License
 
 MIT — see [LICENSE](LICENSE). Copyright (c) 2026 the Paramount++ contributors.
 
-Not affiliated with, endorsed by, or supported by Paramount. All trademarks belong
-to their respective owners.
-
+Not affiliated with, endorsed by, or supported by Paramount. All trademarks belong to their respective owners.
