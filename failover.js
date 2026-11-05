@@ -80,26 +80,101 @@
       handled = true;
     }
 
+    // Some builds expose a volume plugin instead of player methods.
+    if (!handled && typeof player.getPlugin === 'function') {
+      const names = ['volume', 'Volume', 'audio', 'Audio', 'volumePlugin'];
+      for (let i = 0; i < names.length; i++) {
+        const plugin = safe(() => player.getPlugin(names[i]), null);
+        if (!plugin) continue;
+        if (typeof plugin.setMuted === 'function') {
+          safe(() => plugin.setMuted(state.muted));
+          handled = true;
+        }
+        if (typeof plugin.setVolume === 'function') {
+          safe(() => plugin.setVolume(state.volume));
+          handled = true;
+        }
+        if (handled) break;
+      }
+    }
+
     if (handled) {
       console.info(TAG, 'volume/mute restored through the player API');
       return;
     }
 
-    console.info(TAG, 'player has no volume API, trying the unmute control');
+    if (state.muted) return;
+    console.info(TAG, 'player has no volume API, looking for the mute control');
+    resyncViaControl(state);
+  }
 
-    // Fallback: only act when the control is offering "unmute", which means the
-    // player believes it is muted while the element is not.
-    setTimeout(() => {
-      const video = document.querySelector('video');
-      if (!video || video.muted !== state.muted) return;
-      if (state.muted) return;
-      const control = document.querySelector('[aria-label*="unmute" i], [title*="unmute" i]');
-      if (!control) {
-        console.info(TAG, 'no unmute control found, leaving audio alone');
+  // Walk open shadow roots too; player chrome is often encapsulated.
+  function deepQueryAll(selector) {
+    const out = [];
+    const walk = (root) => {
+      try {
+        const found = root.querySelectorAll(selector);
+        for (let i = 0; i < found.length; i++) out.push(found[i]);
+      } catch (_) {}
+      let all;
+      try {
+        all = root.querySelectorAll('*');
+      } catch (_) {
         return;
       }
-      console.info(TAG, 'clicking the player unmute control to resync');
+      for (let i = 0; i < all.length; i++) {
+        if (all[i].shadowRoot) walk(all[i].shadowRoot);
+      }
+    };
+    walk(document);
+    return out;
+  }
+
+  const isClickable = (el) => {
+    if (!el) return false;
+    const tag = el.tagName ? el.tagName.toLowerCase() : '';
+    if (tag === 'button' || tag === 'a') return true;
+    if (el.getAttribute && el.getAttribute('role') === 'button') return true;
+    try {
+      return getComputedStyle(el).cursor === 'pointer';
+    } catch (_) {
+      return false;
+    }
+  };
+
+  function resyncViaControl(state) {
+    setTimeout(() => {
+      const video = document.querySelector('video');
+      if (!video || video.muted !== state.muted || state.muted) return;
+
+      const labelled = deepQueryAll('[aria-label*="mute" i],[title*="mute" i],[data-testid*="mute" i]');
+      let control = labelled.filter(isClickable)[0] || labelled[0];
+
+      if (!control) {
+        const byClass = deepQueryAll('[class*="mute" i],[class*="volume" i]');
+        control = byClass.filter(isClickable)[0] || null;
+        if (control) {
+          console.info(TAG, 'using class-matched control: ' + (control.className || control.tagName));
+        }
+      }
+
+      if (!control) {
+        console.info(TAG, 'no mute control found, leaving audio alone');
+        return;
+      }
+
+      console.info(TAG, 'clicking the mute control to resync');
       safe(() => control.click());
+
+      // If that actually muted us, undo it: the element must stay unmuted.
+      setTimeout(() => {
+        const now = document.querySelector('video');
+        if (now && now.muted) {
+          console.info(TAG, 'control muted the element, clicking back');
+          safe(() => control.click());
+          safe(() => { now.muted = false; });
+        }
+      }, 250);
     }, 600);
   }
 
