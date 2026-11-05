@@ -1,0 +1,14 @@
+# build artifacts
+*.zip
+*.xpi
+*.crx
+
+# editor / OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# dependencies, if tooling is ever added
+node_modules/

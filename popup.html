@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Paramount++</title>
+  <style>
+    :root {
+      --bg: #131317;
+      --panel: #1d1d23;
+      --line: #2b2b33;
+      --text: #ececf1;
+      --dim: #8d8d9a;
+      --accent: #2f7cf6;
+      --good: #4ec07d;
+      --warn: #e3a54a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      width: 268px;
+      margin: 0;
+      padding: 14px;
+      font: 13px/1.45 system-ui, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #44444f;
+      flex: 0 0 auto;
+      transition: background .2s;
+    }
+    .dot.on { background: var(--accent); box-shadow: 0 0 8px rgba(47,124,246,.55); }
+    h1 { font-size: 13px; font-weight: 600; letter-spacing: .2px; margin: 0; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      margin-bottom: 10px;
+    }
+    .row span { color: var(--text); }
+
+    .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
+    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+    .track {
+      position: absolute; inset: 0;
+      background: #3a3a44;
+      border-radius: 999px;
+      transition: background .18s;
+      pointer-events: none;
+    }
+    .track::after {
+      content: "";
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      background: #f2f2f5;
+      border-radius: 50%;
+      transition: transform .18s;
+    }
+    .switch input:checked + .track { background: var(--accent); }
+    .switch input:checked + .track::after { transform: translateX(16px); }
+    .switch input:disabled + .track { opacity: .45; }
+    .switch input:disabled { cursor: default; }
+
+    .label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      color: var(--dim);
+      margin: 12px 0 6px;
+    }
+    .seg {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 4px;
+    }
+    .seg button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--dim);
+      font: inherit;
+      font-size: 12px;
+      padding: 7px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .seg button:hover { color: var(--text); }
+    .seg button.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .seg button:disabled { opacity: .45; cursor: default; }
+
+    .status {
+      margin-top: 12px;
+      padding: 11px 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+    }
+    .res {
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: .3px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .res.idle { color: var(--dim); font-size: 15px; font-weight: 500; }
+    .sub {
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--dim);
+      min-height: 15px;
+    }
+    .sub.good { color: var(--good); }
+    .sub.warn { color: var(--warn); }
+    .hint {
+      margin: 10px 2px 0;
+      font-size: 10.5px;
+      line-height: 1.4;
+      color: var(--dim);
+      text-align: center;
+    }
+    .hint:empty { display: none; }
+    kbd {
+      font: inherit;
+      font-size: 10px;
+      padding: 1px 4px;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: #232329;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="dot"></span>
+    <h1>Paramount++</h1>
+  </header>
+
+  <div class="row">
+    <span id="stateWord">On</span>
+    <label class="switch" aria-label="Force highest quality">
+      <input type="checkbox" id="toggle" aria-label="Force highest quality">
+      <span class="track"></span>
+    </label>
+  </div>
+
+  <div class="label">Quality</div>
+  <div class="seg" id="modes">
+    <button type="button" data-mode="720">720p</button>
+    <button type="button" data-mode="1080">1080p</button>
+  </div>
+
+  <div class="status">
+    <div class="res idle" id="res">Not playing</div>
+    <div class="sub" id="sub">Open a Paramount+ video to begin.</div>
+  </div>
+
+  <p class="hint" id="hint"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
