@@ -56,7 +56,11 @@
   // exposes one, and otherwise click its "Unmute" control if it disagrees.
   function syncPlayerMute(api, state) {
     const player = safe(() => api && api.PLAYER, null);
-    if (!player || !state) return;
+    if (!player) {
+      console.info(TAG, 'no player API, cannot resync mute');
+      return;
+    }
+    if (!state) return;
 
     let handled = false;
     if (typeof player.setVolume === 'function') {
@@ -81,6 +85,8 @@
       return;
     }
 
+    console.info(TAG, 'player has no volume API, trying the unmute control');
+
     // Fallback: only act when the control is offering "unmute", which means the
     // player believes it is muted while the element is not.
     setTimeout(() => {
@@ -88,18 +94,22 @@
       if (!video || video.muted !== state.muted) return;
       if (state.muted) return;
       const control = document.querySelector('[aria-label*="unmute" i], [title*="unmute" i]');
-      if (!control) return;
+      if (!control) {
+        console.info(TAG, 'no unmute control found, leaving audio alone');
+        return;
+      }
       console.info(TAG, 'clicking the player unmute control to resync');
       safe(() => control.click());
     }, 600);
   }
 
-  function restoreAv(state, api) {
+  function restoreAv(state, api, oldVideo) {
     if (!state) return;
     const startedAt = Date.now();
     const timer = setInterval(() => {
       const video = document.querySelector('video');
-      if (video && video.readyState >= 2) {
+      const stale = video && oldVideo && video === oldVideo && Date.now() - startedAt < 4000;
+      if (video && !stale && video.readyState >= 2) {
         clearInterval(timer);
         safe(() => {
           video.volume = state.volume;
@@ -307,7 +317,8 @@
       paused: paused,
       alternate: alternate,
       api: api,
-      av: captureAv(video)
+      av: captureAv(video),
+      video: video
     };
     pending = job;
 
@@ -355,7 +366,7 @@
         console.info(TAG, 'load called');
       }
       startWatch();
-      restoreAv(job.av, job.api);
+      restoreAv(job.av, job.api, job.video);
     };
 
     step();
@@ -507,10 +518,9 @@
     // Never let a hung load block the controls forever.
     setTimeout(() => done(true), 15000);
 
-    restoreAv(av, api);
+    restoreAv(av, api, video);
 
-    if (wasPaused) {
-      const startedAt = Date.now();
+    if (wasPaused) {      const startedAt = Date.now();
       const stop = setInterval(() => {
         const el = document.querySelector('video');
         if (el && el.readyState >= 3) {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Paramount++",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "Pins Paramount+ playback to the highest video quality listed in its own manifest. Local build, no network access.",
   "permissions": ["storage"],
   "host_permissions": ["*://*.paramountplus.com/*"],
