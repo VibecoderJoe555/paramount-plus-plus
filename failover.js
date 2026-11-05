@@ -203,8 +203,41 @@
   let pending = null;
   let attempts = 0;
   let teardownSeen = false;
+  let lastKnownTime = 0;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // A freshly created player reports 0 until it starts, so remember the last
+  // real position and fall back to it instead of restarting the title.
+  let lowTicks = 0;
+  setInterval(() => {
+    const video = document.querySelector('video');
+    if (!video) return;
+    const t = video.currentTime;
+    if (Number.isFinite(t) && t > 0.5) {
+      lastKnownTime = t;
+      lowTicks = 0;
+      return;
+    }
+    // A real restart (new episode) stays near zero while playing; a switch does
+    // not, so only forget the position after several seconds of it.
+    if (video.readyState >= 2 && !video.paused) {
+      lowTicks += 1;
+      if (lowTicks >= 8) {
+        lastKnownTime = 0;
+        lowTicks = 0;
+      }
+    } else {
+      lowTicks = 0;
+    }
+  }, 1000);
+
+  const resumePoint = (playerTime, video) => {
+    const raw = Number.isFinite(playerTime) ? playerTime : (video ? video.currentTime || 0 : 0);
+    const value = raw < 2 && lastKnownTime > 5 ? lastKnownTime : raw;
+    lastKnownTime = Math.max(lastKnownTime, value);
+    return Math.max(0, value);
+  };
 
   const state = () => window.__pqmState || null;
 
@@ -370,7 +403,7 @@
 
     const video = document.querySelector('video');
     const playerTime = safe(() => api.PLAYER.contentTime, null);
-    const resume = Number.isFinite(playerTime) ? playerTime : (video ? video.currentTime || 0 : 0);
+    const resume = resumePoint(playerTime, video);
     const paused = video ? video.paused : true;
 
     const next = Object.assign({}, content, {
@@ -551,7 +584,7 @@
     }
 
     const playerTime = safe(() => api.PLAYER.contentTime, null);
-    const resume = Number.isFinite(playerTime) ? playerTime : (video ? video.currentTime || 0 : 0);
+    const resume = resumePoint(playerTime, video);
     const wasPaused = video ? video.paused : false;
     const av = captureAv(video);
 
