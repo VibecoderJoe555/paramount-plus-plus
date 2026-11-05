@@ -12,3 +12,6 @@ desktop.ini
 
 # dependencies, if tooling is ever added
 node_modules/
+
+# GitHub-only assets (not part of the extension package)
+docs/
