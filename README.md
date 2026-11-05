@@ -65,6 +65,9 @@ Temporary builds disappear when Firefox closes.
 - The toolbar badge shows the live tier: `HD` green at 1080p, `SD` green at your
   selected height, `SD` amber if it falls below target, `OFF` when disabled.
 - Volume and mute survive every quality change and recovery.
+- If a switch leaves the player spinning on "Optimizing your video playback
+  experience", the page reloads itself once after a few seconds instead of
+  hanging there.
 
 ## Limits
 

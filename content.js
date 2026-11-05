@@ -85,6 +85,7 @@
       updateBadge();
     } else if (event.data.type === 'applying') {
       applying = !!payload.active;
+      if (applying) lastApplyAt = Date.now();
     } else if (event.data.type === 'ready') {
       sawReady = true;
       pushConfig();
@@ -93,6 +94,74 @@
 
   pushConfig();
   setInterval(updateBadge, 2000);
+
+  /* ---- stuck-playback watchdog ---- */
+
+  const RELOAD_KEY = 'pqmStuckReloadAt';
+  let lastTime = -1;
+  let advancingAt = Date.now();
+  let expectBy = 0;
+  let lastApplyAt = 0;
+  let wasApplying = false;
+  let wasRecovering = false;
+
+  const stuckText = () => {
+    try {
+      const body = document.body;
+      return !!body && /optimizing your video playback/i.test(body.innerText || '');
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const reloadOnce = (reason) => {
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+    } catch (_) {}
+    if (last && Date.now() - last < 60000) return;
+    try {
+      sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    } catch (_) {}
+    console.info('[Paramount++] playback stuck (' + reason + '), reloading');
+    location.reload();
+  };
+
+  setInterval(() => {
+    if (!enabledNow) return;
+
+    const now = Date.now();
+    const video = document.querySelector('video');
+
+    if (video && video.currentTime !== lastTime) {
+      lastTime = video.currentTime;
+      advancingAt = now;
+    }
+
+    // A switch that finished without playback resuming is the spinner case.
+    if (wasApplying && !applying) expectBy = now + 8000;
+    if (wasRecovering && !recovering) expectBy = now + 8000;
+    wasApplying = applying;
+    wasRecovering = recovering;
+
+    const pausedByUser = video && video.paused && video.readyState >= 2 && video.currentTime > 0;
+    const alive = pausedByUser || now - advancingAt < 3000;
+
+    if (expectBy) {
+      if (now > expectBy) {
+        expectBy = 0;
+        if (!alive) {
+          reloadOnce('no playback after switch');
+          return;
+        }
+      }
+    }
+
+    if (!expectBy && alive === false && lastApplyAt && now - lastApplyAt < 45000 && stuckText()) {
+      reloadOnce('optimizing overlay');
+    }
+  }, 1000);
+
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (changes.enabled || changes.mode) {
