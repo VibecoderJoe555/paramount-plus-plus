@@ -38,20 +38,9 @@ rather than leaving you with nothing.
 
 ## Install
 
-Temporary (until Firefox closes):
-
 1. Open `about:debugging#/runtime/this-firefox`
 2. **Load Temporary Add-on…**
 3. Pick `manifest.json` in this folder
-
-Permanent (sign it yourself, nothing is published):
-
-1. Zip the folder contents, `manifest.json` at the root
-2. <https://addons.mozilla.org/developers/addon/submit/> → **On your own** → **unlisted**
-3. Drag the signed `.xpi` into Firefox
-
-An unlisted signature is a stamp, not a listing — nobody can download it or push
-updates to you.
 
 ## What you will notice
 
