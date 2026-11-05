@@ -18,10 +18,45 @@
   let applying = false;
   let sawReady = false;
   let applyTimer = null;
+  let enabledNow = true;
+  let lastBadge = null;
+
+  const sendBadge = (text, tone) => {
+    const key = text + '|' + tone;
+    if (key === lastBadge) return;
+    lastBadge = key;
+    try {
+      Promise.resolve(browser.runtime.sendMessage({ type: 'PQM_BADGE', text: text, tone: tone })).catch(() => {});
+    } catch (_) {}
+  };
+
+  const updateBadge = () => {
+    if (!enabledNow) {
+      sendBadge('OFF', 'off');
+      return;
+    }
+    if (recovering) {
+      sendBadge('...', 'warn');
+      return;
+    }
+    const video = document.querySelector('video');
+    const height = video && video.videoHeight ? video.videoHeight : 0;
+    const target = stats && stats.height ? stats.height : 0;
+
+    if (height) {
+      sendBadge(String(height), target && height >= target ? 'good' : 'warn');
+    } else if (target) {
+      sendBadge(String(target), 'good');
+    } else {
+      sendBadge('', 'off');
+    }
+  };
 
   const pushConfig = () => {
     browser.storage.local.get({ enabled: true, mode: '1080' }).then((s) => {
-      window.postMessage({ __pqm: 'config', payload: { enabled: !!s.enabled, mode: s.mode } }, '*');
+      enabledNow = !!s.enabled;
+      window.postMessage({ __pqm: 'config', payload: { enabled: enabledNow, mode: s.mode } }, '*');
+      updateBadge();
     });
   };
 
@@ -41,8 +76,10 @@
     const payload = event.data.payload || {};
     if (event.data.type === 'status') {
       stats = payload.stats || null;
+      updateBadge();
     } else if (event.data.type === 'recovering') {
       recovering = !!payload.active;
+      updateBadge();
     } else if (event.data.type === 'applying') {
       applying = !!payload.active;
     } else if (event.data.type === 'ready') {
@@ -52,6 +89,7 @@
   });
 
   pushConfig();
+  setInterval(updateBadge, 2000);
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (changes.enabled || changes.mode) {

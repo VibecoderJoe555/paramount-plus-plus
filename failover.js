@@ -47,6 +47,26 @@
 
   const normalize = (value) => String(value || '').replace(/-/g, '').toLowerCase();
 
+  // Volume and mute live on the <video> element, so a reload resets them.
+  const captureAv = (video) => (video ? { volume: video.volume, muted: video.muted } : null);
+
+  function restoreAv(state) {
+    if (!state) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      const video = document.querySelector('video');
+      if (video && video.readyState >= 2) {
+        clearInterval(timer);
+        safe(() => {
+          video.volume = state.volume;
+          video.muted = state.muted;
+        });
+      } else if (Date.now() - startedAt > 20000) {
+        clearInterval(timer);
+      }
+    }, 250);
+  }
+
   let tag = null;
   let poll = null;
   let watch = null;
@@ -241,7 +261,8 @@
       time: Math.max(0, resume),
       paused: paused,
       alternate: alternate,
-      api: api
+      api: api,
+      av: captureAv(video)
     };
     pending = job;
 
@@ -289,6 +310,7 @@
         console.info(TAG, 'load called');
       }
       startWatch();
+      restoreAv(job.av);
     };
 
     step();
@@ -400,6 +422,7 @@
     const playerTime = safe(() => api.PLAYER.contentTime, null);
     const resume = Number.isFinite(playerTime) ? playerTime : (video ? video.currentTime || 0 : 0);
     const wasPaused = video ? video.paused : false;
+    const av = captureAv(video);
 
     const next = Object.assign({}, content, {
       globalResumeTime: Math.max(0, resume),
@@ -438,6 +461,8 @@
 
     // Never let a hung load block the controls forever.
     setTimeout(() => done(true), 15000);
+
+    restoreAv(av);
 
     if (wasPaused) {
       const startedAt = Date.now();

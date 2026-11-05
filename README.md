@@ -62,6 +62,9 @@ Temporary builds disappear when Firefox closes.
   that title.
 - The popup shows the real decoded resolution, so you can confirm 1080p rather
   than trusting how it looks.
+- The toolbar badge shows the live height: `1080` green, `540` amber, `OFF` when
+  disabled.
+- Volume and mute survive every quality change and recovery.
 
 ## Limits
 
@@ -87,6 +90,7 @@ no build step and no minification — the files shipped are the source, readable
 | `page.js` | Manifest rewriting in the page's main world |
 | `failover.js` | Missing-key detection and source failover |
 | `content.js` | Injects the engine, relays config/status |
+| `background.js` | Toolbar badge |
 | `popup.html` / `popup.js` | Toggle, quality selector, live status |
 
 ## Permissions
