@@ -39,17 +39,20 @@
       sendBadge('...', 'warn');
       return;
     }
+
     const video = document.querySelector('video');
     const height = video && video.videoHeight ? video.videoHeight : 0;
     const target = stats && stats.height ? stats.height : 0;
+    const shown = height || target;
 
-    if (height) {
-      sendBadge(String(height), target && height >= target ? 'good' : 'warn');
-    } else if (target) {
-      sendBadge(String(target), 'good');
-    } else {
+    if (!shown) {
       sendBadge('', 'off');
+      return;
     }
+
+    const label = shown >= 1080 ? 'HD' : 'SD';
+    const met = !target || shown >= target;
+    sendBadge(label, met ? 'good' : 'warn');
   };
 
   const pushConfig = () => {

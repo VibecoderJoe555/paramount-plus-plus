@@ -62,8 +62,8 @@ Temporary builds disappear when Firefox closes.
   that title.
 - The popup shows the real decoded resolution, so you can confirm 1080p rather
   than trusting how it looks.
-- The toolbar badge shows the live height: `1080` green, `540` amber, `OFF` when
-  disabled.
+- The toolbar badge shows the live tier: `HD` green at 1080p, `SD` green at your
+  selected height, `SD` amber if it falls below target, `OFF` when disabled.
 - Volume and mute survive every quality change and recovery.
 
 ## Limits
