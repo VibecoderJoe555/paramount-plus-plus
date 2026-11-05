@@ -38,9 +38,19 @@ rather than leaving you with nothing.
 
 ## Install
 
+**[Download Paramount++](https://github.com/VibecoderJoe555/paramount-plus-plus/releases/latest/download/paramount-plus-plus.xpi)** and drag the file into Firefox, then confirm the install prompt.
+
+It is signed by Mozilla, so it stays installed across restarts.
+
+### From source
+
+For development, or to load an unsigned build:
+
 1. Open `about:debugging#/runtime/this-firefox`
 2. **Load Temporary Add-on…**
 3. Pick `manifest.json` in this folder
+
+Temporary builds disappear when Firefox closes.
 
 ## What you will notice
 
