@@ -50,7 +50,51 @@
   // Volume and mute live on the <video> element, so a reload resets them.
   const captureAv = (video) => (video ? { volume: video.volume, muted: video.muted } : null);
 
-  function restoreAv(state) {
+  // The player mutes the element for autoplay and tracks that in its own model.
+  // Setting element.muted back leaves the two out of sync: audio plays but the
+  // UI still shows muted. Push the state through the player's own API when it
+  // exposes one, and otherwise click its "Unmute" control if it disagrees.
+  function syncPlayerMute(api, state) {
+    const player = safe(() => api && api.PLAYER, null);
+    if (!player || !state) return;
+
+    let handled = false;
+    if (typeof player.setVolume === 'function') {
+      safe(() => player.setVolume(state.volume));
+      handled = true;
+    } else if (typeof player.volume === 'function') {
+      safe(() => player.volume(state.volume));
+      handled = true;
+    }
+
+    if (typeof player.setMuted === 'function') {
+      safe(() => player.setMuted(state.muted));
+      handled = true;
+    } else if (typeof player.mute === 'function') {
+      if (player.mute.length >= 1) safe(() => player.mute(state.muted));
+      else if (!state.muted) safe(() => player.mute());
+      handled = true;
+    }
+
+    if (handled) {
+      console.info(TAG, 'volume/mute restored through the player API');
+      return;
+    }
+
+    // Fallback: only act when the control is offering "unmute", which means the
+    // player believes it is muted while the element is not.
+    setTimeout(() => {
+      const video = document.querySelector('video');
+      if (!video || video.muted !== state.muted) return;
+      if (state.muted) return;
+      const control = document.querySelector('[aria-label*="unmute" i], [title*="unmute" i]');
+      if (!control) return;
+      console.info(TAG, 'clicking the player unmute control to resync');
+      safe(() => control.click());
+    }, 600);
+  }
+
+  function restoreAv(state, api) {
     if (!state) return;
     const startedAt = Date.now();
     const timer = setInterval(() => {
@@ -61,6 +105,7 @@
           video.volume = state.volume;
           video.muted = state.muted;
         });
+        syncPlayerMute(api, state);
       } else if (Date.now() - startedAt > 20000) {
         clearInterval(timer);
       }
@@ -310,7 +355,7 @@
         console.info(TAG, 'load called');
       }
       startWatch();
-      restoreAv(job.av);
+      restoreAv(job.av, job.api);
     };
 
     step();
@@ -462,7 +507,7 @@
     // Never let a hung load block the controls forever.
     setTimeout(() => done(true), 15000);
 
-    restoreAv(av);
+    restoreAv(av, api);
 
     if (wasPaused) {
       const startedAt = Date.now();
